@@ -1,8 +1,10 @@
 package com.digital.book.controller;
 
+import com.digital.book.model.Author;
 import com.digital.book.model.Book;
 import com.digital.book.model.Reader;
 import com.digital.book.pojo.BuyBookPojo;
+import com.digital.book.repository.AuthorRepository;
 import com.digital.book.repository.BookRepository;
 import com.digital.book.repository.ReaderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,20 +25,23 @@ public class ReaderController {
     @Autowired
     private ReaderRepository readerRepository;
 
+    @Autowired
+    private AuthorRepository authorRepository;
+
     @GetMapping("/books/search")
     public ResponseEntity<Object> getBooks(@RequestParam String title, @RequestParam String category,
-                                         @RequestParam String authorName, @RequestParam Double price){
-
-        List<Book> bookList = bookRepository.findByTitleAndCategoryAndAuthorNameAndPrice(title,category,authorName,price);
-        if(bookList == null)
-           return  ResponseEntity.status(HttpStatus.OK).body("");
-        else {
+                                           @RequestParam String authorName, @RequestParam Double price) {
+        Author author = authorRepository.findByAuthorName(authorName);
+        if (author != null) {
+            List<Book> bookList = bookRepository.findByTitleAndCategoryAndAuthorIdAndPrice(title, category, author.getAuthorId(), price);
+            if (bookList != null)
             return ResponseEntity.status(HttpStatus.OK).body(bookList);
         }
+        return ResponseEntity.status(HttpStatus.OK).body("");
     }
 
     @PostMapping("/books/buy")
-    public ResponseEntity<Object> buyBook(@RequestBody BuyBookPojo buyBookPojo){
+    public ResponseEntity<Object> buyBook(@RequestBody BuyBookPojo buyBookPojo) {
         Reader reader = Reader.builder()
                 .bookId(buyBookPojo.getBookId())
                 .email(buyBookPojo.getReader().getEmail())
@@ -49,24 +54,24 @@ public class ReaderController {
     }
 
     @GetMapping("/{email_id}/books")
-        public ResponseEntity<Object> getBookByEmail(@PathVariable ("email_id") String email){
-         List<Reader> purchasedBook = readerRepository.findByEmail(email);
-         return ResponseEntity.status(HttpStatus.OK).body(purchasedBook);
-        }
+    public ResponseEntity<Object> getBookByEmail(@PathVariable("email_id") String email) {
+        List<Reader> purchasedBook = readerRepository.findByEmail(email);
+        return ResponseEntity.status(HttpStatus.OK).body(purchasedBook);
+    }
 
     @GetMapping("/{email_id}/books/pid")
-    public ResponseEntity<Object> getBookByPaymentId(@PathVariable ("email_id") String email,@RequestParam Integer paymentId){
+    public ResponseEntity<Object> getBookByPaymentId(@PathVariable("email_id") String email, @RequestParam Integer paymentId) {
         List<Reader> purchasedBook = readerRepository.findByPaymentId(paymentId);
         return ResponseEntity.status(HttpStatus.OK).body(purchasedBook);
     }
 
     @PutMapping("/{email_id}/books/{book_id}/cancel")
-    public ResponseEntity<Object> cancelSubscription(@PathVariable ("email_id") String email,
-                                                     @PathVariable ("book_id") Integer bookId) {
+    public ResponseEntity<Object> cancelSubscription(@PathVariable("email_id") String email,
+                                                     @PathVariable("book_id") Integer bookId) {
         Reader reader = readerRepository.findByBookIdAndEmail(bookId, email);
         long timeStamp = System.currentTimeMillis();
-        long diff = timeStamp - reader.getPurchaseTimestamp() / (1000 * 60 * 60 );
-        if(diff< 24) {
+        long diff = (timeStamp - reader.getPurchaseTimestamp()) / (1000 * 60 * 60);
+        if (diff < 24) {
             reader.setSubscribed(false);
             readerRepository.save(reader);
             return ResponseEntity.status(HttpStatus.OK).body("Subscription cancelled successfully");
@@ -76,11 +81,10 @@ public class ReaderController {
     }
 
     @PutMapping("/{email_id}/books/{book_id}/read")
-    public ResponseEntity<Object> readABook(@PathVariable ("email_id") String email, @PathVariable ("book_id") Integer bookId) {
-        Reader reader = readerRepository.findByBookIdAndEmail(bookId,email);
-        if(reader!=null)
-        return ResponseEntity.status(HttpStatus.OK).body(reader);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Subscription cannot be cancelled");
-
+    public ResponseEntity<Object> readABook(@PathVariable("email_id") String email, @PathVariable("book_id") Integer bookId) {
+        Reader reader = readerRepository.findByBookIdAndEmail(bookId, email);
+        if (reader != null && reader.isSubscribed())
+            return ResponseEntity.status(HttpStatus.OK).body(reader);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Reader is not Subscribed to this Book");
     }
 }

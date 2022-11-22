@@ -17,8 +17,6 @@ public class BookPojo {
     private String category;
     private Double price;
     private String publisher;
-    private Date publishDate;
-    private Integer authorId;
     private boolean isActive;
 }
 

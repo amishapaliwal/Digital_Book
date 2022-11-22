@@ -3,6 +3,7 @@ package com.digital.book.model;
 import lombok.*;
 
 import javax.persistence.*;
+import java.security.Timestamp;
 import java.util.Date;
 
 @Entity
@@ -21,9 +22,8 @@ public class Book {
     private String category;
     private Double price;
     private String publisher;
-    private Date publishDate;
+    private long publishDate;
     private Integer authorId;
-    private String authorName;
     private boolean isActive;
 
 }
