@@ -53,10 +53,10 @@ public class AuthorController {
     }
 
     @GetMapping("/login")
-    public ResponseEntity loginAuth(@RequestParam String email, @RequestParam String password) throws Exception {
+    public ResponseEntity loginAuth(@RequestParam String email, @RequestParam String password)  {
         Author author = authorRepository.findByEmailAndPassword(email, password);
         if (author == null)
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Login failed");
 
         final UserDetails userDetails = userService.loadUserByUsername(email);
 
@@ -80,7 +80,7 @@ public class AuthorController {
                     .price(bookPojo.getPrice())
                     .publisher(bookPojo.getPublisher())
                     .publishDate(System.currentTimeMillis())
-                    .isActive(bookPojo.isActive())
+                    .isActive(bookPojo.getIsActive())
                     .build();
 
             bookRepository.save(book);

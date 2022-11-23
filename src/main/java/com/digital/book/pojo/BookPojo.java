@@ -17,6 +17,6 @@ public class BookPojo {
     private String category;
     private Double price;
     private String publisher;
-    private boolean isActive;
+    private Boolean isActive;
 }
 

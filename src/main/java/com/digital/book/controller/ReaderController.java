@@ -37,7 +37,7 @@ public class ReaderController {
             if (bookList != null)
             return ResponseEntity.status(HttpStatus.OK).body(bookList);
         }
-        return ResponseEntity.status(HttpStatus.OK).body("");
+        return ResponseEntity.status(HttpStatus.OK).body("Book Not found");
     }
 
     @PostMapping("/books/buy")
