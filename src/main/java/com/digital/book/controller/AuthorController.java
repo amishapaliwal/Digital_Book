@@ -1,21 +1,20 @@
 package com.digital.book.controller;
 
-import com.digital.book.configs.JwtResponseModel;
-import com.digital.book.configs.JwtUserDetailsService;
-import com.digital.book.configs.TokenManager;
+import com.digital.book.entity.JwtResponse;
 import com.digital.book.model.Author;
 import com.digital.book.model.Book;
 import com.digital.book.pojo.AuthorPojo;
 import com.digital.book.pojo.BookPojo;
 import com.digital.book.repository.AuthorRepository;
 import com.digital.book.repository.BookRepository;
+import com.digital.book.service.UserService;
+import com.digital.book.utility.JWTUtility;
 import lombok.Builder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -33,16 +32,13 @@ public class AuthorController {
     private BookRepository bookRepository;
 
     @Autowired
-    private JwtUserDetailsService userDetailsService;
+    private JWTUtility jwtUtility;
 
     @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    private TokenManager tokenManager;
-
-    @Autowired
-    JwtUserDetailsService jwtUserDetailsService;
+    private UserService userService;
 
     @PostMapping("/signup")
     public ResponseEntity<Object> createAccount(@RequestBody AuthorPojo authorPojo) {
@@ -53,33 +49,19 @@ public class AuthorController {
                 .build();
 
         authorRepository.save(author);
-        jwtUserDetailsService.loadUserByUsername(author.getEmail());
         return ResponseEntity.status(HttpStatus.OK).body("Account created successfully");
     }
 
     @GetMapping("/login")
     public ResponseEntity loginAuth(@RequestParam String email, @RequestParam String password) throws Exception {
-        try {
-            authenticationManager.authenticate(
-                    new
-                            UsernamePasswordAuthenticationToken(email,
-                            password)
-            );
-        } catch (DisabledException e) {
-            throw new Exception("USER_DISABLED", e);
-        } catch (BadCredentialsException e) {
-            throw new Exception("INVALID_CREDENTIALS", e);
-        }
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-        final String jwtToken = tokenManager.generateJwtToken(userDetails);
-        return ResponseEntity.ok(new JwtResponseModel(jwtToken));
-//
-//        Author author = authorRepository.findByEmailAndPassword(email, password);
-//        if (author == null) {
-//            return "Login failed";
-//        } else {
-//            return "Login Successful";
-//        }
+        Author author = authorRepository.findByEmailAndPassword(email, password);
+        if (author == null)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("");
+
+        final UserDetails userDetails = userService.loadUserByUsername(email);
+
+        final String token = jwtUtility.generateToken(userDetails);
+        return ResponseEntity.status(HttpStatus.OK).body(new JwtResponse(token));
     }
 
     @GetMapping("/logout")
